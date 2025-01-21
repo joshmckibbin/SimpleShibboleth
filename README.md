@@ -1,6 +1,8 @@
-# SimpleShib
+# Simple Shibboleth
 
-SimpleShib is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure.
+Simple Shibboleth is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure.
+
+Simple Shibboleth began as a fork of [SimpleShib](https://github.com/srguglielmo/SimpleShib) by [srguglielmo](https://github.com/srguglielmo)
 
 ## Documentation
 
