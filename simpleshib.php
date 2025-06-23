@@ -1,12 +1,11 @@
 <?php
 /**
- * Plugin Name: SimpleShib
- * Plugin URI: https://wordpress.org/plugins/simpleshib/
+ * Plugin Name: Simple Shibboleth
  * Description: User authentication via Shibboleth Single Sign-On.
- * Version: 1.2.2
+ * Version: 1.5.0
  * Requires at least: 5.2
- * Requires PHP: 7.2
- * Author: Steve Guglielmo
+ * Requires PHP: 8.0
+ * Author: Steve Guglielmo, Josh Mckibbin
  * License: MIT
  * Network: true
  *
@@ -15,9 +14,11 @@
  * @package SimpleShib
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	die( 'No script kiddies please!' );
-}
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
+// Define the plugin version.
+define( 'SIMPLE_SHIBBOLETH_VERSION', '1.5.0' );
 
 require_once 'class-simple-shib.php';
 
