@@ -415,12 +415,8 @@ class Simple_Shib {
 		}
 
 		// Verify the security nonce value.
-		if ( empty( $_POST['simpleshib-opts-nonce'] ) ) {
-			wp_die( 'Missing nonce!' );
-		}
-		$nonce = wp_verify_nonce( $_POST['simpleshib-opts-nonce'], 'simpleshib-opts-nonce' ); // phpcs:ignore
-		if ( ! $nonce ) {
-			wp_die( 'Nonce is bad!' );
+		if ( empty( $_POST['simpleshib-opts-nonce'] ) || ! wp_verify_nonce( $_POST['simpleshib-opts-nonce'], 'simpleshib-opts-nonce' ) ) { // phpcs:ignore
+			wp_die( 'Invalid nonce!' );
 		}
 
 		$new_options = array();
