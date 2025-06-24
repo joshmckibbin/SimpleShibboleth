@@ -21,7 +21,15 @@
 class Simple_Shib {
 
 	/**
-	 * Array containing current options.
+	 * Instance of the Simple_Shib class.
+	 *
+	 * @since 1.5.0
+	 * @var Simple_Shib $instance
+	 */
+	private static $instance;
+
+	/**
+	 * Options
 	 *
 	 * @since 1.2.0
 	 * @var array $options
@@ -62,8 +70,15 @@ class Simple_Shib {
 	 * @see add_action()
 	 */
 	public function __construct() {
-		// Initialize plugin options.
-		$this->initialize_options();
+		// Get the options.
+		$this->options = self::get_options();
+
+		// Enable WP-CLI commands.
+		if ( self::is_wp_cli() ) {
+			self::wp_cli_commands();
+		}
+
+		// var_dump( $this->options ); // Uncomment this line to debug the options.
 
 		// If SSO is _not_ enabled, this plugin still does a few things (e.g. adding the settings menu),
 		// but it doesn't add the actual authenticate and session validation filters/actions.
@@ -77,7 +92,14 @@ class Simple_Shib {
 
 			// Bypass the logout confirmation and redirect to $session_logout_url defined above.
 			add_action( 'login_form_logout', array( $this, 'shib_logout' ), 5, 0 );
+
+			// Hide password related fields.
+			add_filter( 'show_password_fields', '__return_false' );
+			add_filter( 'allow_password_reset', '__return_false' );
+			add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
 		}
+
+		add_action( 'wp_before_admin_bar_render', array( $this, 'remove_new_user_admin_bar_link' ) );
 
 		// Add the settings menu page and handle POST options.
 		if ( ! is_multisite() ) {
@@ -87,19 +109,24 @@ class Simple_Shib {
 			add_action( 'network_admin_menu', array( $this, 'add_settings_menu' ), 10, 0 );
 			add_action( 'network_admin_edit_simpleshib_settings', array( $this, 'handle_post' ), 5, 0 );
 		}
-
-		// Hide password fields on profile.php and user-edit.php, and do not alow resets.
-		add_action( 'admin_init', array( $this, 'admin_init' ) );
-		add_filter( 'show_password_fields', '__return_false' );
-		add_filter( 'allow_password_reset', '__return_false' );
-		add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
-
-		add_action( 'wp_before_admin_bar_render', array( $this, 'remove_new_user_admin_bar_link' ) );
 	}
 
 
 	/**
-	 * Initializes plugin options.
+	 * Initialize the Simple_Shib class.
+	 *
+	 * @since 1.5.0
+	 */
+	public static function init() {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
+
+
+	/**
+	 * Get the plugin options.
 	 *
 	 * This method will fetch the options from the database. If options do not
 	 * exist, they will be added with appropriate default values. Note that
@@ -109,7 +136,7 @@ class Simple_Shib {
 	 * @see add_site_option()
 	 * @since 1.2.0
 	 */
-	private function initialize_options() {
+	private static function get_options() {
 		$options = get_site_option( 'simpleshib_options', false );
 		if ( false === $options || empty( $options ) ) {
 			// The options don't exist in the DB. Add them with default values.
@@ -117,7 +144,141 @@ class Simple_Shib {
 			add_site_option( 'simpleshib_options', $options );
 		}
 
-		$this->options = $options;
+		return $options;
+	}
+
+	/**
+	 * WP-CLI check
+	 */
+	private static function is_wp_cli() {
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Add Custom WP-CLI commands.
+	 */
+	public static function wp_cli_commands() {
+		if ( ! class_exists( 'WP_CLI' ) ) {
+			return;
+		}
+
+		// Register the activate command.
+		WP_CLI::add_command( 'sshib enable', array( __CLASS__, 'wp_cli_enable' ) );
+
+		// Register the deactivate command.
+		WP_CLI::add_command( 'sshib disable', array( __CLASS__, 'wp_cli_disable' ) );
+	}
+
+	/**
+	 * Enable the plugin via WP-CLI.
+	 */
+	public static function wp_cli_enable() {
+		if ( ! self::is_wp_cli() ) {
+			return;
+		}
+
+		$options = self::get_options();
+		if ( true === $options['enabled'] ) {
+			WP_CLI::error( 'Simple Shibboleth SSO is already enabled.' );
+		}
+		$options['enabled'] = true;
+		update_site_option( 'simpleshib_options', $options );
+
+		WP_CLI::success( 'Simple Shibboleth SSO Enabled' );
+	}
+
+	/**
+	 * Disable the plugin via WP-CLI.
+	 */
+	public static function wp_cli_disable() {
+		if ( ! self::is_wp_cli() ) {
+			return;
+		}
+
+		$options = self::get_options();
+		if ( false === $options['enabled'] ) {
+			WP_CLI::error( 'Simple Shibboleth SSO is already disabled.' );
+		}
+		$options['enabled'] = false;
+		update_site_option( 'simpleshib_options', $options );
+
+		WP_CLI::success( 'Simple Shibboleth SSO Disabled' );
+	}
+
+	/**
+	 * Activates the plugin.
+	 */
+	public static function activate() {
+		if ( ! self::is_wp_cli() ) {
+			if ( ! current_user_can( 'activate_plugins' ) ) {
+				wp_die( esc_html__( 'Permission denied.' ) );
+			}
+
+			$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : ''; // phpcs:ignore WordPress.Security -- check_admin_referer() handles this.
+			check_admin_referer( "activate-plugin_{$plugin}" );
+		}
+
+		// Initialize the plugin options.
+		$options = self::get_options();
+
+		// Always disable SSO on activation.
+		if ( true === $options['enabled'] ) {
+			$options['enabled'] = false;
+			update_site_option( 'simpleshib_options', $options );
+		}
+
+		// Hide password fields on profile.php and user-edit.php, and do not alow resets.
+		add_action( 'admin_init', array( self::init(), 'admin_init' ) );
+	}
+
+
+	/**
+	 * Deactivates the plugin.
+	 */
+	public static function deactivate() {
+		if ( ! self::is_wp_cli() ) {
+			if ( ! current_user_can( 'activate_plugins' ) ) {
+				wp_die( esc_html__( 'Permission denied.' ) );
+			}
+			$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : ''; // phpcs:ignore WordPress.Security -- check_admin_referer() handles this.
+			check_admin_referer( "deactivate-plugin_{$plugin}" );
+		}
+
+		// Disable SSO on deactivation.
+		$options            = self::get_options();
+		$options['enabled'] = false;
+		update_site_option( 'simpleshib_options', $options );
+
+		// Remove all shib filters and actions added by this plugin.
+		remove_all_filters( 'authenticate' );
+		remove_action( 'init', array( self::init(), 'validate_shib_session' ) );
+		remove_action( 'login_form_logout', array( self::init(), 'shib_logout' ) );
+		remove_action( 'admin_menu', array( self::init(), 'add_settings_menu' ) );
+		remove_action( 'network_admin_menu', array( self::init(), 'add_settings_menu' ) );
+		remove_action( 'wp_before_admin_bar_render', array( self::init(), 'remove_new_user_admin_bar_link' ) );
+	}
+
+
+	/**
+	 * Uninstalls the plugin.
+	 */
+	public static function uninstall() {
+		if ( ! self::is_wp_cli() ) {
+			if ( ! current_user_can( 'activate_plugins' ) ) {
+				wp_die( esc_html__( 'Permission denied.' ) );
+			}
+
+			// Check if the file is the one that was registered during the uninstall hook.
+			if ( __FILE__ !== WP_UNINSTALL_PLUGIN ) {
+				wp_die( esc_html__( 'Permission denied.' ) );
+			}
+		}
+
+		// Remove the options from the database.
+		delete_site_option( 'simpleshib_options' );
 	}
 
 
@@ -127,17 +288,16 @@ class Simple_Shib {
 	 * Unknown keys will be unset. Invalid values will be replaced with defaults.
 	 *
 	 * @since 1.2.0
-	 * @param mixed $given_opts Options submitted by the user.
+	 * @param array $given_opts Options submitted by the user.
 	 * @return array Sanitized array of known options.
 	 */
-	public function sanitize_options( $given_opts ) {
-		$defaults = self::DEFAULT_OPTS;
+	public function sanitize_options( array $given_opts = array() ) {
+		$clean_opts = self::DEFAULT_OPTS;
 
-		if ( empty( $given_opts ) || ! is_array( $given_opts ) ) {
-			return $defaults;
+		if ( empty( $given_opts ) ) {
+			return $clean_opts;
 		}
 
-		$clean_opts = array();
 		foreach ( $given_opts as $key => $value ) {
 			switch ( $key ) {
 				// Strings (non-URL).
@@ -145,8 +305,8 @@ class Simple_Shib {
 				case 'attr_firstname':
 				case 'attr_lastname':
 				case 'attr_username':
-					if ( ctype_alnum( trim( $value ) ) ) {
-						$clean_opts[ $key ] = (string) $value;
+					if ( sanitize_text_field( (string) $value ) ) {
+						$clean_opts[ $key ] = $value;
 					}
 					continue 2;
 
@@ -154,7 +314,7 @@ class Simple_Shib {
 				case 'autoprovision':
 				case 'debug':
 				case 'enabled':
-					$validated = filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
+					$validated = filter_var( $value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE );
 					if ( ! is_null( $validated ) ) {
 						$clean_opts[ $key ] = (bool) $validated;
 					}
@@ -163,19 +323,18 @@ class Simple_Shib {
 				// Full URL strings.
 				case 'pass_change_url':
 				case 'pass_reset_url':
-					$sanitized = filter_var( $value, FILTER_SANITIZE_URL );
-					$validated = filter_var( $sanitized, FILTER_VALIDATE_URL );
-					if ( false !== $sanitized && false !== $validated && ! empty( $validated ) ) {
-						$clean_opts[ $key ] = (string) $validated;
+					$sanitized = sanitize_url( $value, array( 'https' ) );
+					if ( ! empty( $sanitized ) ) {
+						$clean_opts[ $key ] = $sanitized;
 					}
 					continue 2;
 
 				// Strings, but not full URLs (e.g. "/Shibboleth.sso/Login").
 				case 'session_init_url':
 				case 'session_logout_url':
-					$sanitized = filter_var( $value, FILTER_SANITIZE_URL );
-					if ( false !== $sanitized && ! empty( $sanitized ) ) {
-						$clean_opts[ $key ] = (string) $sanitized;
+					$sanitized = filter_var( (string) $value, FILTER_SANITIZE_URL );
+					if ( ! empty( $sanitized ) ) {
+						$clean_opts[ $key ] = $sanitized;
 					}
 					continue 2;
 			}
@@ -206,7 +365,7 @@ class Simple_Shib {
 	 *
 	 * @return WP_User Returns WP_User for successful authentication, otherwise WP_Error.
 	 */
-	public function authenticate_or_redirect( $user, $username, $password ) {
+	public function authenticate_or_redirect( $user, $username, $password ) { //phpcs:ignore
 		// Logged in at IdP and WP. Redirect to /.
 		if ( true === is_user_logged_in() &&
 		true === $this->is_shib_session_active() ) {
@@ -282,8 +441,8 @@ class Simple_Shib {
 
 		add_submenu_page(
 			$parent_slug,
-			__( 'SimpleShib Settings' ),
-			__( 'SimpleShib' ),
+			__( 'Simple Shibboleth Settings' ),
+			__( 'Simple Shibboleth' ),
 			'manage_options',
 			'simpleshib_settings',
 			array( $this, 'settings_menu_html' ),
@@ -308,87 +467,87 @@ class Simple_Shib {
 			$post_url = add_query_arg( 'action', 'simpleshib_settings', network_admin_url( 'edit.php' ) );
 		} ?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'SimpleShib Settings' ); ?></h1>
+			<h1><?php esc_html_e( 'Simple Shibboleth Settings' ); ?></h1>
 			<form method="post" action="<?php echo esc_url( $post_url ); ?>">
-				<?php wp_nonce_field( 'simpleshib-opts-nonce', 'simpleshib-opts-nonce' ); ?>
+				<?php wp_nonce_field( 'simple-shibboleth-' . SIMPLE_SHIBBOLETH_VERSION, 'simpleshib_options[_nonce]' ); ?>
 				<table class="form-table" role="presentation">
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Enable SSO' ); ?></th>
 					<td>
-						<input type="checkbox" id="simpleshib_options-enabled" name="simpleshib_options-enabled" value="1"<?php echo ( true === $this->options['enabled'] ? ' checked' : '' ); ?> />
-						<label for="simpleshib_options-enabled"><?php esc_html_e( 'Enable and enforce SSO. Local account passwords will no longer be used.' ); ?></label>
+						<input type="checkbox" id="simple-shibboleth--enabled" name="simpleshib_options[enabled]" value="1"<?php echo ( true === $this->options['enabled'] ? ' checked' : '' ); ?> />
+						<label for="simple-shibboleth--enabled"><?php esc_html_e( 'Enable and enforce SSO. Local account passwords will no longer be used.' ); ?></label>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simpleshib_options-attr_email"><?php esc_html_e( 'Email Attribute' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--attr_email"><?php esc_html_e( 'Email Attribute' ); ?></label></th>
 					<td>
-						<input type="text" id="simpleshib_options-attr_email" name="simpleshib_options-attr_email" size="40" value="<?php echo esc_attr( $this->options['attr_email'] ); ?>" required /><br>
+						<input type="text" id="simple-shibboleth--attr_email" name="simpleshib_options[attr_email]" size="40" value="<?php echo esc_attr( $this->options['attr_email'] ); ?>" required /><br>
 						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s email address. Default:' ); ?> <code>mail</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simpleshib_options-attr_firstname"><?php esc_html_e( 'First Name Attribute' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--attr_firstname"><?php esc_html_e( 'First Name Attribute' ); ?></label></th>
 					<td>
-						<input type="text" id="simpleshib_options-attr_firstname" name="simpleshib_options-attr_firstname" size="40" value="<?php echo esc_attr( $this->options['attr_firstname'] ); ?>" required /><br>
+						<input type="text" id="simple-shibboleth--attr_firstname" name="simpleshib_options[attr_firstname]" size="40" value="<?php echo esc_attr( $this->options['attr_firstname'] ); ?>" required /><br>
 						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s (preferred) first name. Default:' ); ?> <code>givenName</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simpleshib_options-attr_lastname"><?php esc_html_e( 'Last Name Attribute' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--attr_lastname"><?php esc_html_e( 'Last Name Attribute' ); ?></label></th>
 					<td>
-						<input type="text" id="simpleshib_options-attr_lastname" name="simpleshib_options-attr_lastname" size="40" value="<?php echo esc_attr( $this->options['attr_lastname'] ); ?>" required /><br>
+						<input type="text" id="simple-shibboleth--attr_lastname" name="simpleshib_options[attr_lastname]" size="40" value="<?php echo esc_attr( $this->options['attr_lastname'] ); ?>" required /><br>
 						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s (preferred) last name. Default:' ); ?> <code>sn</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simpleshib_options-attr_username"><?php esc_html_e( 'Username Attribute' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--attr_username"><?php esc_html_e( 'Username Attribute' ); ?></label></th>
 					<td>
-						<input type="text" id="simpleshib_options-attr_username" name="simpleshib_options-attr_username" size="40" value="<?php echo esc_attr( $this->options['attr_username'] ); ?>" required /><br>
+						<input type="text" id="simple-shibboleth--attr_username" name="simpleshib_options[attr_usernam]" size="40" value="<?php echo esc_attr( $this->options['attr_username'] ); ?>" required /><br>
 						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s local WordPress username. Default:' ); ?> <code>uid</code>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Autoprovision Accounts' ); ?></th>
 					<td>
-						<input type="checkbox" id="simpleshib_options-autoprovision" name="simpleshib_options-autoprovision" value="1"<?php echo ( true === $this->options['autoprovision'] ? ' checked' : '' ); ?> />
-						<label for="simpleshib_options-autoprovision"><?php esc_html_e( 'Automatically create local accounts (as needed) after authenticating at the IdP.' ); ?></label><br>
+						<input type="checkbox" id="simple-shibboleth--autoprovision" name="simpleshib_options[autoprovision]" value="1"<?php echo ( true === $this->options['autoprovision'] ? ' checked' : '' ); ?> />
+						<label for="simple-shibboleth--autoprovision"><?php esc_html_e( 'Automatically create local accounts (as needed) after authenticating at the IdP.' ); ?></label><br>
 						<?php esc_html_e( 'If disabled, only users with pre-existing local accounts can login.' ); ?>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simpleshib_options-session_init_url"><?php esc_html_e( 'Session Initiation URL' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--session_init_url"><?php esc_html_e( 'Session Initiation URL' ); ?></label></th>
 					<td>
-						<input type="text" id="simpleshib_options-session_init_url" name="simpleshib_options-session_init_url" size="70" value="<?php echo esc_attr( $this->options['session_init_url'] ); ?>" required /><br>
+						<input type="text" id="simple-shibboleth--session_init_url" name="simpleshib_options[session_init_url]" size="70" value="<?php echo esc_attr( $this->options['session_init_url'] ); ?>" required /><br>
 						<?php esc_html_e( 'This generally should not be changed. Default:' ); ?> <code>/Shibboleth.sso/Login</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simpleshib_options-session_logout_url"><?php esc_html_e( 'Session Logout URL' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--session_logout_url"><?php esc_html_e( 'Session Logout URL' ); ?></label></th>
 					<td>
-						<input type="text" id="simpleshib_options-session_logout_url" name="simpleshib_options-session_logout_url" size="70" value="<?php echo esc_attr( $this->options['session_logout_url'] ); ?>" required /><br>
+						<input type="text" id="simple-shibboleth--session_logout_url" name="simpleshib_options[session_logout_url]" size="70" value="<?php echo esc_attr( $this->options['session_logout_url'] ); ?>" required /><br>
 						<?php esc_html_e( 'This generally should not be changed, but an optional return URL can be provided. Example:' ); ?><br>
 						<code>/Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simpleshib_options-pass_change_url"><?php esc_html_e( 'Password Change URL' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--pass_change_url"><?php esc_html_e( 'Password Change URL' ); ?></label></th>
 					<td>
-						<input type="text" id="simpleshib_options-pass_change_url" name="simpleshib_options-pass_change_url" size="70" value="<?php echo esc_attr( $this->options['pass_change_url'] ); ?>" required /><br>
+						<input type="text" id="simple-shibboleth--pass_change_url" name="simpleshib_options[pass_change_url]" size="70" value="<?php echo esc_attr( $this->options['pass_change_url'] ); ?>" required /><br>
 						<?php esc_html_e( 'Full URL where users can change their SSO password.' ); ?>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simpleshib_options-pass_reset_url"><?php esc_html_e( 'Password Reset URL' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--pass_reset_url"><?php esc_html_e( 'Password Reset URL' ); ?></label></th>
 					<td>
-						<input type="text" id="simpleshib_options-pass_reset_url" name="simpleshib_options-pass_reset_url" size="70" value="<?php echo esc_attr( $this->options['pass_reset_url'] ); ?>" required /><br>
+						<input type="text" id="simple-shibboleth--pass_reset_url" name="simpleshib_options[pass_reset_url]" size="70" value="<?php echo esc_attr( $this->options['pass_reset_url'] ); ?>" required /><br>
 						<?php esc_html_e( 'Full URL where users can reset their forgotten/lost SSO password.' ); ?>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Debug' ); ?></th>
 					<td>
-						<input type="checkbox" id="simpleshib_options-debug" name="simpleshib_options-debug" value="1"<?php echo ( true === $this->options['debug'] ? ' checked' : '' ); ?> />
-						<label for="simpleshib_options-debug"><?php esc_html_e( 'Log debugging messages to PHP\'s error log.' ); ?></label>
+						<input type="checkbox" id="simple-shibboleth--debug" name="simpleshib_options[debug]" value="1"<?php echo ( true === $this->options['debug'] ? ' checked' : '' ); ?> />
+						<label for="simple-shibboleth--debug"><?php esc_html_e( 'Log debugging messages to PHP\'s error log.' ); ?></label>
 					</td>
 				</tr>
 				</table>
@@ -410,23 +569,23 @@ class Simple_Shib {
 	 * @see update_site_option()
 	 */
 	public function handle_post() {
-		if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'] || empty( $_POST ) ) {
+		if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'] || empty( $_POST['simpleshib_options'] ) ) {
 			wp_die( 'Request method isn\'t POST or post data is empty!' );
 		}
 
 		// Verify the security nonce value.
-		if ( empty( $_POST['simpleshib-opts-nonce'] ) || ! wp_verify_nonce( $_POST['simpleshib-opts-nonce'], 'simpleshib-opts-nonce' ) ) { // phpcs:ignore
+		if ( empty( $_POST['simpleshib_options']['_nonce'] ) || ! wp_verify_nonce( $_POST['simpleshib_options']['_nonce'], 'simple-shibboleth-' . SIMPLE_SHIBBOLETH_VERSION ) ) { // phpcs:ignore
 			wp_die( 'Invalid nonce!' );
 		}
 
 		$new_options = array();
 		foreach ( self::DEFAULT_OPTS as $key => $value ) {
-			if ( empty( $_POST[ 'simpleshib_options-' . $key ] ) ) {
+			if ( empty( $_POST['simpleshib_options'][ $key ] ) ) {
 				// Unchecked checkboxes are empty() in the POST data.
-				$_POST[ 'simpleshib_options-' . $key ] = false;
+				$_POST['simpleshib_options'][ $key ] = false;
 			}
 
-			$new_options[ $key ] = $_POST[ 'simpleshib_options-' . $key ];  // phpcs:ignore
+			$new_options[ $key ] = $_POST['simpleshib_options'][ $key ];  // phpcs:ignore
 		}
 
 		$clean_options = $this->sanitize_options( $new_options );

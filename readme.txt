@@ -1,7 +1,7 @@
 === Simple Shibboleth ===
 Contributors: srg-1, joshmckibbin
 Tags: shibboleth, authentication, sso, login
-Requires at least: 5.2
+Requires at least: 5.9
 Tested up to: 6.8.1
 Requires PHP: 8.0
 License: MIT
@@ -85,10 +85,14 @@ See the `LICENSE` file for full details.
 
 = 1.5.0 =
 * Require PHP 8.0.
+* Require WordPress 5.9.
 * Documentation updates.
 * Switched from jQuery to vanilla JavaScript.
 * Removed the `new user` button from the admin bar menu.
 * Added plugin version constant.
+* Added WP-CLI support for SSO enable option.
+* Changed names of form fields on options page to single array.
+
 
 = 1.4.0 =
 * Moved javascript to a separate file loaded via `wp_enqueue_script()` instead of injecting it inline.
@@ -98,7 +102,7 @@ See the `LICENSE` file for full details.
 
 = 1.3.0 =
 * Forked and development resumed by Josh Mckibbin.
-* Removed flags from the `filter_var()` function to support PHP 8.2.
+* Removed flags from the `filter_var()` function to support PHP 8.1.
 
 = 1.2.2 =
 * Compatibility with WordPress 5.4.

@@ -22,4 +22,14 @@ define( 'SIMPLE_SHIBBOLETH_VERSION', '1.5.0' );
 
 require_once 'class-simple-shib.php';
 
-new Simple_Shib();
+// Register activation hook.
+register_activation_hook( __FILE__, array( 'Simple_Shib', 'activate' ) );
+
+// Register deactivation hook.
+register_deactivation_hook( __FILE__, array( 'Simple_Shib', 'deactivate' ) );
+
+// Register uninstall hook.
+register_uninstall_hook( __FILE__, array( 'Simple_Shib', 'uninstall' ) );
+
+// Initialize the plugin.
+add_action( 'plugins_loaded', array( 'Simple_Shib', 'init' ) );
