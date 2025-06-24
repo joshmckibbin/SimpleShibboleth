@@ -2,15 +2,16 @@
 Contributors: srg-1, joshmckibbin
 Tags: shibboleth, authentication, sso, login
 Requires at least: 5.9
-Tested up to: 6.8.1
+Tested up to: 6.8
 Requires PHP: 8.0
+Stable tag: 1.5.1
 License: MIT
 
-Simple Shibboleth is a modernized fork of the abandoned SimpleShib WordPress plugin originally developed by Steve Guglielmo. Its only function is to provide a simple means to authenticate users with a Shibboleth Single Sign-On infrastructure. It is designed to be easy to install and configure and does not handle user roles or any other WordPress functionality. 
+A modernized fork of SimpleShib for Shibboleth SSO authentication. Easy to install and configure, focusing solely on authentication.
 
 == Description ==
 
-**Simple Shibboleth** is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure. This plugin will not work if you do not have a Shibboleth IdP and SP already configured.
+**Simple Shibboleth** is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure. It is an updated fork of the [SimpleShib](https://wordpress.com/plugins/simpleshib) plugin. This plugin will not work if you do not have a Shibboleth IdP and SP already configured.
 
 When a WordPress login request is received from a user, the Shibboleth session is validated. If the session does not exist, user is redirected to the IdP login page. Once authenticated at the IdP, the user is redirected back to WordPress and logged into their local WordPress account. If a local account does not exist, one can _optionally_ be created.
 
@@ -42,6 +43,17 @@ This plugin will not work if you do not have a Shibboleth IdP and SP already con
 3. Activate the **Simple Shibboleth** plugin in WordPress.
 4. Browse to Settings->Simple Shibboleth and edit the configuration.
 
+= WP-CLI can also be used to enable/disable the plugin's 'Enable SSO' configuration option =
+
+If you have WP-CLI installed, you can enable Shibboleth SSO with the following command:
+```bash
+wp sshib enable
+```
+You can disable the plugin with:
+```bash
+wp sshib disable
+```
+
 == Frequently Asked Questions ==
 
 = What is Shibboleth? =
@@ -66,11 +78,11 @@ Add the following to Apache's config:
 
 = Can I automatically set user roles based on IdP data?  =
 
-No. **SimpleShib** handles authentication, not authorization. Authorization is managed within WordPress by network admins or site admins.
+No. **Simple Shibboleth** handles authentication, not authorization. Authorization is managed within WordPress by network admins or site admins.
 
 = What's this MIT license? =
 
-**SimpleShib** is released under the MIT license. The MIT license is short, simple, and very permissive. Basically, you can do whatever you want, provided the original copyright and license notice are included in any/all copies of the software. You may modify, distribute, sell, incorporate into proprietary software, use privately, and use commerically.
+**Simple Shibboleth** is released under the MIT license. The MIT license is short, simple, and very permissive. Basically, you can do whatever you want, provided the original copyright and license notice are included in any/all copies of the software. You may modify, distribute, sell, incorporate into proprietary software, use privately, and use commerically.
 
 There is no warranty and the author or any contributors are not liable if something goes wrong.
 

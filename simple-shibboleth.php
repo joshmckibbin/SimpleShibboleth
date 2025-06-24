@@ -3,7 +3,7 @@
  * Plugin Name: Simple Shibboleth
  * Description: User authentication via Shibboleth Single Sign-On.
  * Version: 1.5.1
- * Requires at least: 5.2
+ * Requires at least: 5.9
  * Requires PHP: 8.0
  * Author: Steve Guglielmo, Josh Mckibbin
  * License: MIT
