@@ -5,7 +5,8 @@
  * The Simple_Shib class is comprised of methods to support Single Sign-On via Shibboleth.
  *
  * @link https://wordpress.org/plugins/simpleshib/ Old WordPress plugin page.
- * @link https://github.com/joshmckibbin/SimpleShibboleth New GitHub repository.
+ * @link https://github.com/srguglielmo/SimpleShib Archived GitHub repository.
+ * @link https://github.com/joshmckibbin/SimpleShibboleth Current GitHub repository.
  *
  * @package SimpleShibboleth
  * @since 1.0.0
