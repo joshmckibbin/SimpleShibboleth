@@ -1,13 +1,13 @@
 <?php
 /**
- * SimpleShib: Simple_Shib class
+ * Simple Shibboleth: Simple_Shib class
  *
  * The Simple_Shib class is comprised of methods to support Single Sign-On via Shibboleth.
  *
  * @link https://wordpress.org/plugins/simpleshib/ Old WordPress plugin page.
  * @link https://github.com/joshmckibbin/SimpleShibboleth New GitHub repository.
  *
- * @package SimpleShib
+ * @package SimpleShibboleth
  * @since 1.0.0
  */
 
@@ -93,7 +93,9 @@ class Simple_Shib {
 			// Bypass the logout confirmation and redirect to $session_logout_url defined above.
 			add_action( 'login_form_logout', array( $this, 'shib_logout' ), 5, 0 );
 
-			// Hide password related fields.
+			// Hide password fields on profile.php and user-edit.php, and do not alow resets.
+			add_action( 'admin_init', array( $this, 'admin_init' ) );
+
 			add_filter( 'show_password_fields', '__return_false' );
 			add_filter( 'allow_password_reset', '__return_false' );
 			add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
@@ -229,9 +231,6 @@ class Simple_Shib {
 			$options['enabled'] = false;
 			update_site_option( 'simpleshib_options', $options );
 		}
-
-		// Hide password fields on profile.php and user-edit.php, and do not alow resets.
-		add_action( 'admin_init', array( self::init(), 'admin_init' ) );
 	}
 
 

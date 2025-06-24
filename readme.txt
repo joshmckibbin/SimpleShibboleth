@@ -83,6 +83,9 @@ See the `LICENSE` file for full details.
 
 == Changelog ==
 
+= 1.5.1 =
+* Bug fixes for user profile page.
+
 = 1.5.0 =
 * Require PHP 8.0.
 * Require WordPress 5.9.
