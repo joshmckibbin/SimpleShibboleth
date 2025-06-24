@@ -93,7 +93,6 @@ See the `LICENSE` file for full details.
 * Added WP-CLI support for SSO enable option.
 * Changed names of form fields on options page to single array.
 
-
 = 1.4.0 =
 * Moved javascript to a separate file loaded via `wp_enqueue_script()` instead of injecting it inline.
 * Utilize the `admin_notices` action to display messages.
