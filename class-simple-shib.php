@@ -294,7 +294,8 @@ class Simple_Shib {
 	public function sanitize_options( array $given_opts = array() ) {
 		$clean_opts = self::DEFAULT_OPTS;
 
-		if ( empty( $given_opts ) ) {
+		// If no options are given, return the defaults.
+		if ( empty( $given_opts ) || ! array_filter( $given_opts ) ) {
 			return $clean_opts;
 		}
 
