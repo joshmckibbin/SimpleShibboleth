@@ -79,8 +79,6 @@ class Simple_Shib {
 			self::wp_cli_commands();
 		}
 
-		// var_dump( $this->options ); // Uncomment this line to debug the options.
-
 		// If SSO is _not_ enabled, this plugin still does a few things (e.g. adding the settings menu),
 		// but it doesn't add the actual authenticate and session validation filters/actions.
 		if ( true === $this->options['enabled'] ) {
