@@ -95,6 +95,9 @@ See the `LICENSE` file for full details.
 
 == Changelog ==
 
+= 1.5.2 =
+* Fix: streamline release package creation and update documentation for clarity.
+
 = 1.5.1 =
 * Bug fixes for user profile page.
 
