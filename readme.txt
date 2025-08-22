@@ -41,7 +41,7 @@ This plugin will not work if you do not have a Shibboleth IdP and SP already con
 	RewriteRule . - [END]`
 
 3. Activate the **Simple Shibboleth** plugin in WordPress.
-4. Browse to Settings->Simple Shibboleth and edit the configuration.
+4. Browse to Settings > Simple Shibboleth and edit the configuration.
 
 = WP-CLI can also be used to enable/disable the plugin's 'Enable SSO' configuration option =
 

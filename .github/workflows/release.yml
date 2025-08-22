@@ -43,19 +43,17 @@ jobs:
       run: |
         # Create a temporary directory for the package
         mkdir -p /tmp/simple-shibboleth
-        
+
         # Copy plugin files, excluding development files
-        rsync -av --exclude-from=<(cat << 'EOF'
-        .git/
-        .github/
-        .gitignore
-        .gitattributes
-        .vscode/
-        .editorconfig
-        *.md
-        EOF
-        ) ./ /tmp/simple-shibboleth/
-        
+        rsync -av \
+            --exclude='.git*' \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.vscode' \
+            --exclude='.editorconfig' \
+            --exclude='*.md' \
+            ./ /tmp/simple-shibboleth/
+
         # Create the ZIP file
         cd /tmp
         zip -r simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip simple-shibboleth/
@@ -81,7 +79,7 @@ jobs:
         if [ ! -s CHANGELOG.md ]; then
           echo "Release $VERSION" > CHANGELOG.md
           echo "" >> CHANGELOG.md
-          echo "See readme.txt for full changelog details." >> CHANGELOG.md
+          echo "See \`readme.txt\` for full changelog details." >> CHANGELOG.md
         fi
         
         # Set output for use in release notes
