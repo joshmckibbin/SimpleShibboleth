@@ -95,24 +95,33 @@ jobs:
       with:
         name: Simple Shibboleth v${{ steps.get_version.outputs.VERSION }}
         body: |
-          ## Simple Shibboleth v${{ steps.get_version.outputs.VERSION }}
-          
-          ### Changes in this release:
+          ## Changes in v${{ steps.get_version.outputs.VERSION }}
+
           ${{ steps.changelog.outputs.CHANGELOG }}
           
-          ### Installation
-          
-          1. Download the `simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip` file below
-          2. In your WordPress admin, go to Plugins > Add New > Upload Plugin
-          3. Upload the ZIP file and activate the plugin
-          4. Configure the plugin settings under Settings > Simple Shibboleth
-          
+          ## Manual Installation
+
+          1. Download the `simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip` file
+          2. Upload to WordPress via Plugins > Add New > Upload Plugin
+          3. Activate the plugin
+
+          ## WP-CLI Installation
+
+          ```bash
+          wp plugin install --activate https://github.com/joshmckibbin/SimpleShibboleth/releases/download/v${{ steps.get_version.outputs.VERSION }}/simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip
+          ```
+
+          ## Configuration
+
+          Go to Settings > Simple Shibboleth to configure the plugin settings.
+
           **Note:** This plugin requires a properly configured Shibboleth IdP and SP. See the [installation instructions](https://github.com/joshmckibbin/SimpleShibboleth#installation) for details.
           
-          ### Requirements
-          - WordPress 5.9 or higher
+          ## Requirements
+
+          - WordPress 6.0 or higher
           - PHP 8.0 or higher
-          - Shibboleth SP configured with Apache mod_shib
+          - Shibboleth SP configured with Apache `mod_shib`
         files: |
           simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip
         draft: false
