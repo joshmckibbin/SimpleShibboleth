@@ -215,7 +215,7 @@ class Simple_Shib {
 	public static function activate() {
 		if ( ! self::is_wp_cli() ) {
 			if ( ! current_user_can( 'activate_plugins' ) ) {
-				wp_die( esc_html__( 'Permission denied.' ) );
+				wp_die( esc_html__( 'Permission denied.', 'simple-shibboleth' ) );
 			}
 
 			$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : ''; // phpcs:ignore WordPress.Security -- check_admin_referer() handles this.
@@ -239,7 +239,7 @@ class Simple_Shib {
 	public static function deactivate() {
 		if ( ! self::is_wp_cli() ) {
 			if ( ! current_user_can( 'activate_plugins' ) ) {
-				wp_die( esc_html__( 'Permission denied.' ) );
+				wp_die( esc_html__( 'Permission denied.', 'simple-shibboleth' ) );
 			}
 			$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : ''; // phpcs:ignore WordPress.Security -- check_admin_referer() handles this.
 			check_admin_referer( "deactivate-plugin_{$plugin}" );
@@ -266,12 +266,12 @@ class Simple_Shib {
 	public static function uninstall() {
 		if ( ! self::is_wp_cli() ) {
 			if ( ! current_user_can( 'activate_plugins' ) ) {
-				wp_die( esc_html__( 'Permission denied.' ) );
+				wp_die( esc_html__( 'Permission denied.', 'simple-shibboleth' ) );
 			}
 
 			// Check if the file is the one that was registered during the uninstall hook.
 			if ( __FILE__ !== WP_UNINSTALL_PLUGIN ) {
-				wp_die( esc_html__( 'Permission denied.' ) );
+				wp_die( esc_html__( 'Permission denied.', 'simple-shibboleth' ) );
 			}
 		}
 
@@ -440,8 +440,8 @@ class Simple_Shib {
 
 		add_submenu_page(
 			$parent_slug,
-			__( 'Simple Shibboleth Settings' ),
-			__( 'Simple Shibboleth' ),
+			__( 'Simple Shibboleth Settings', 'simple-shibboleth' ),
+			__( 'Simple Shibboleth', 'simple-shibboleth' ),
 			'manage_options',
 			'simpleshib_settings',
 			array( $this, 'settings_menu_html' ),
@@ -466,87 +466,87 @@ class Simple_Shib {
 			$post_url = add_query_arg( 'action', 'simpleshib_settings', network_admin_url( 'edit.php' ) );
 		} ?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Simple Shibboleth Settings' ); ?></h1>
+			<h1><?php esc_html_e( 'Simple Shibboleth Settings', 'simple-shibboleth' ); ?></h1>
 			<form method="post" action="<?php echo esc_url( $post_url ); ?>">
 				<?php wp_nonce_field( 'simple-shibboleth-' . SIMPLE_SHIBBOLETH_VERSION, 'simpleshib_options[_nonce]' ); ?>
 				<table class="form-table" role="presentation">
 				<tr>
-					<th scope="row"><?php esc_html_e( 'Enable SSO' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'Enable SSO', 'simple-shibboleth' ); ?></th>
 					<td>
 						<input type="checkbox" id="simple-shibboleth--enabled" name="simpleshib_options[enabled]" value="1"<?php echo ( true === $this->options['enabled'] ? ' checked' : '' ); ?> />
-						<label for="simple-shibboleth--enabled"><?php esc_html_e( 'Enable and enforce SSO. Local account passwords will no longer be used.' ); ?></label>
+						<label for="simple-shibboleth--enabled"><?php esc_html_e( 'Enable and enforce SSO. Local account passwords will no longer be used.', 'simple-shibboleth' ); ?></label>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simple-shibboleth--attr_email"><?php esc_html_e( 'Email Attribute' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--attr_email"><?php esc_html_e( 'Email Attribute', 'simple-shibboleth' ); ?></label></th>
 					<td>
 						<input type="text" id="simple-shibboleth--attr_email" name="simpleshib_options[attr_email]" size="40" value="<?php echo esc_attr( $this->options['attr_email'] ); ?>" required /><br>
-						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s email address. Default:' ); ?> <code>mail</code>
+						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s email address. Default:', 'simple-shibboleth' ); ?> <code>mail</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simple-shibboleth--attr_firstname"><?php esc_html_e( 'First Name Attribute' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--attr_firstname"><?php esc_html_e( 'First Name Attribute', 'simple-shibboleth' ); ?></label></th>
 					<td>
 						<input type="text" id="simple-shibboleth--attr_firstname" name="simpleshib_options[attr_firstname]" size="40" value="<?php echo esc_attr( $this->options['attr_firstname'] ); ?>" required /><br>
-						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s (preferred) first name. Default:' ); ?> <code>givenName</code>
+						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s (preferred) first name. Default:', 'simple-shibboleth' ); ?> <code>givenName</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simple-shibboleth--attr_lastname"><?php esc_html_e( 'Last Name Attribute' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--attr_lastname"><?php esc_html_e( 'Last Name Attribute', 'simple-shibboleth' ); ?></label></th>
 					<td>
 						<input type="text" id="simple-shibboleth--attr_lastname" name="simpleshib_options[attr_lastname]" size="40" value="<?php echo esc_attr( $this->options['attr_lastname'] ); ?>" required /><br>
-						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s (preferred) last name. Default:' ); ?> <code>sn</code>
+						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s (preferred) last name. Default:', 'simple-shibboleth' ); ?> <code>sn</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simple-shibboleth--attr_username"><?php esc_html_e( 'Username Attribute' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--attr_username"><?php esc_html_e( 'Username Attribute', 'simple-shibboleth' ); ?></label></th>
 					<td>
-						<input type="text" id="simple-shibboleth--attr_username" name="simpleshib_options[attr_usernam]" size="40" value="<?php echo esc_attr( $this->options['attr_username'] ); ?>" required /><br>
-						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s local WordPress username. Default:' ); ?> <code>uid</code>
+						<input type="text" id="simple-shibboleth--attr_username" name="simpleshib_options[attr_username]" size="40" value="<?php echo esc_attr( $this->options['attr_username'] ); ?>" required /><br>
+						<?php esc_html_e( 'The SAML attribute released by the IdP containing the person\'s local WordPress username. Default:', 'simple-shibboleth' ); ?> <code>uid</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><?php esc_html_e( 'Autoprovision Accounts' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'Autoprovision Accounts', 'simple-shibboleth' ); ?></th>
 					<td>
 						<input type="checkbox" id="simple-shibboleth--autoprovision" name="simpleshib_options[autoprovision]" value="1"<?php echo ( true === $this->options['autoprovision'] ? ' checked' : '' ); ?> />
-						<label for="simple-shibboleth--autoprovision"><?php esc_html_e( 'Automatically create local accounts (as needed) after authenticating at the IdP.' ); ?></label><br>
-						<?php esc_html_e( 'If disabled, only users with pre-existing local accounts can login.' ); ?>
+						<label for="simple-shibboleth--autoprovision"><?php esc_html_e( 'Automatically create local accounts (as needed) after authenticating at the IdP.', 'simple-shibboleth' ); ?></label><br>
+						<?php esc_html_e( 'If disabled, only users with pre-existing local accounts can login.', 'simple-shibboleth' ); ?>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simple-shibboleth--session_init_url"><?php esc_html_e( 'Session Initiation URL' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--session_init_url"><?php esc_html_e( 'Session Initiation URL', 'simple-shibboleth' ); ?></label></th>
 					<td>
 						<input type="text" id="simple-shibboleth--session_init_url" name="simpleshib_options[session_init_url]" size="70" value="<?php echo esc_attr( $this->options['session_init_url'] ); ?>" required /><br>
-						<?php esc_html_e( 'This generally should not be changed. Default:' ); ?> <code>/Shibboleth.sso/Login</code>
+						<?php esc_html_e( 'This generally should not be changed. Default:', 'simple-shibboleth' ); ?> <code>/Shibboleth.sso/Login</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simple-shibboleth--session_logout_url"><?php esc_html_e( 'Session Logout URL' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--session_logout_url"><?php esc_html_e( 'Session Logout URL', 'simple-shibboleth' ); ?></label></th>
 					<td>
 						<input type="text" id="simple-shibboleth--session_logout_url" name="simpleshib_options[session_logout_url]" size="70" value="<?php echo esc_attr( $this->options['session_logout_url'] ); ?>" required /><br>
-						<?php esc_html_e( 'This generally should not be changed, but an optional return URL can be provided. Example:' ); ?><br>
+						<?php esc_html_e( 'This generally should not be changed, but an optional return URL can be provided. Example:', 'simple-shibboleth' ); ?><br>
 						<code>/Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout</code>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simple-shibboleth--pass_change_url"><?php esc_html_e( 'Password Change URL' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--pass_change_url"><?php esc_html_e( 'Password Change URL', 'simple-shibboleth' ); ?></label></th>
 					<td>
 						<input type="text" id="simple-shibboleth--pass_change_url" name="simpleshib_options[pass_change_url]" size="70" value="<?php echo esc_attr( $this->options['pass_change_url'] ); ?>" required /><br>
-						<?php esc_html_e( 'Full URL where users can change their SSO password.' ); ?>
+						<?php esc_html_e( 'Full URL where users can change their SSO password.', 'simple-shibboleth' ); ?>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="simple-shibboleth--pass_reset_url"><?php esc_html_e( 'Password Reset URL' ); ?></label></th>
+					<th scope="row"><label for="simple-shibboleth--pass_reset_url"><?php esc_html_e( 'Password Reset URL', 'simple-shibboleth' ); ?></label></th>
 					<td>
 						<input type="text" id="simple-shibboleth--pass_reset_url" name="simpleshib_options[pass_reset_url]" size="70" value="<?php echo esc_attr( $this->options['pass_reset_url'] ); ?>" required /><br>
-						<?php esc_html_e( 'Full URL where users can reset their forgotten/lost SSO password.' ); ?>
+						<?php esc_html_e( 'Full URL where users can reset their forgotten/lost SSO password.', 'simple-shibboleth' ); ?>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><?php esc_html_e( 'Debug' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'Debug', 'simple-shibboleth' ); ?></th>
 					<td>
 						<input type="checkbox" id="simple-shibboleth--debug" name="simpleshib_options[debug]" value="1"<?php echo ( true === $this->options['debug'] ? ' checked' : '' ); ?> />
-						<label for="simple-shibboleth--debug"><?php esc_html_e( 'Log debugging messages to PHP\'s error log.' ); ?></label>
+						<label for="simple-shibboleth--debug"><?php esc_html_e( 'Log debugging messages to PHP\'s error log.', 'simple-shibboleth' ); ?></label>
 					</td>
 				</tr>
 				</table>
@@ -836,8 +836,8 @@ class Simple_Shib {
 		?>
 		<table class="form-table">
 			<tr>
-				<th><?php esc_html_e( 'Change Password' ); ?></th>
-				<td><a href="<?php echo esc_url( $this->options['pass_change_url'] ); ?>"><?php esc_html_e( 'Change your password' ); ?></a></td>
+				<th><?php esc_html_e( 'Change Password', 'simple-shibboleth' ); ?></th>
+				<td><a href="<?php echo esc_url( $this->options['pass_change_url'] ); ?>"><?php esc_html_e( 'Change your password', 'simple-shibboleth' ); ?></a></td>
 			</tr>
 		</table>
 		<?php
@@ -872,7 +872,7 @@ class Simple_Shib {
 			return;
 		}
 		?>
-		<div class="notice notice-info"><p><?php esc_html_e( 'Names and email addresses are centrally managed and cannot be changed from within WordPress.' ); ?></p></div>
+		<div class="notice notice-info"><p><?php esc_html_e( 'Names and email addresses are centrally managed and cannot be changed from within WordPress.', 'simple-shibboleth' ); ?></p></div>
 		<?php
 	}
 

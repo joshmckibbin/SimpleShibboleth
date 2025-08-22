@@ -8,6 +8,7 @@
  * Author: Steve Guglielmo, Josh Mckibbin
  * License: MIT
  * Network: true
+ * Text Domain: simple-shibboleth
  *
  * See the LICENSE file for more information.
  *
