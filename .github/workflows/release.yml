@@ -51,6 +51,7 @@ jobs:
             --exclude='.github/' \
             --exclude='.vscode' \
             --exclude='.editorconfig' \
+            --exclude='assets/' \
             --exclude='*.md' \
             ./ /tmp/simple-shibboleth/
 
