@@ -1,4 +1,9 @@
+# Files and directories to exclude from release packages
+.git export-ignore
+.github export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
+.vscode export-ignore
+.editorconfig export-ignore
 *.md export-ignore
-assets export-ignore
+README.md export-ignore

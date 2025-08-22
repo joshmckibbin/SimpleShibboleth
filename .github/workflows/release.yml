@@ -1,0 +1,129 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.5.1, v2.0.0, etc.
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Get tag version
+      id: get_version
+      run: |
+        echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+    - name: Verify version consistency
+      run: |
+        PLUGIN_VERSION=$(grep "Version:" simple-shibboleth.php | sed 's/.*Version: *\([0-9.]*\).*/\1/')
+        CONSTANT_VERSION=$(grep "SIMPLE_SHIBBOLETH_VERSION" simple-shibboleth.php | sed "s/.*'\([0-9.]*\)'.*/\1/")
+        README_VERSION=$(grep "Stable tag:" readme.txt | sed 's/.*Stable tag: *\([0-9.]*\).*/\1/')
+        
+        echo "Plugin file version: $PLUGIN_VERSION"
+        echo "Plugin constant version: $CONSTANT_VERSION"
+        echo "Readme stable tag: $README_VERSION"
+        echo "Git tag version: ${{ steps.get_version.outputs.VERSION }}"
+        
+        if [ "$PLUGIN_VERSION" != "${{ steps.get_version.outputs.VERSION }}" ] || \
+           [ "$CONSTANT_VERSION" != "${{ steps.get_version.outputs.VERSION }}" ] || \
+           [ "$README_VERSION" != "${{ steps.get_version.outputs.VERSION }}" ]; then
+          echo "❌ Version mismatch detected!"
+          echo "Please ensure all versions match the git tag version: ${{ steps.get_version.outputs.VERSION }}"
+          exit 1
+        fi
+        echo "✅ All versions match!"
+        
+    - name: Create release package
+      run: |
+        # Create a temporary directory for the package
+        mkdir -p /tmp/simple-shibboleth
+        
+        # Copy plugin files, excluding development files
+        rsync -av --exclude-from=<(cat << 'EOF'
+        .git/
+        .github/
+        .gitignore
+        .gitattributes
+        .vscode/
+        .editorconfig
+        *.md
+        EOF
+        ) ./ /tmp/simple-shibboleth/
+        
+        # Create the ZIP file
+        cd /tmp
+        zip -r simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip simple-shibboleth/
+        
+        # Move back to workspace
+        mv simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip $GITHUB_WORKSPACE/
+        
+    - name: Generate changelog for this version
+      id: changelog
+      run: |
+        # Extract changelog for current version from readme.txt
+        VERSION="${{ steps.get_version.outputs.VERSION }}"
+        
+        # Find the changelog section and extract content for this version
+        awk "
+        /^== Changelog ==/ { in_changelog=1; next }
+        in_changelog && /^= $VERSION =/ { in_version=1; next }
+        in_changelog && in_version && /^= [0-9]/ && !/^= $VERSION =/ { exit }
+        in_changelog && in_version { print }
+        " readme.txt > CHANGELOG.md
+        
+        # If changelog is empty, create a basic one
+        if [ ! -s CHANGELOG.md ]; then
+          echo "Release $VERSION" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "See readme.txt for full changelog details." >> CHANGELOG.md
+        fi
+        
+        # Set output for use in release notes
+        {
+          echo 'CHANGELOG<<EOF'
+          cat CHANGELOG.md
+          echo EOF
+        } >> $GITHUB_OUTPUT
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Simple Shibboleth v${{ steps.get_version.outputs.VERSION }}
+        body: |
+          ## Simple Shibboleth v${{ steps.get_version.outputs.VERSION }}
+          
+          ### Changes in this release:
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ### Installation
+          
+          1. Download the `simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip` file below
+          2. In your WordPress admin, go to Plugins > Add New > Upload Plugin
+          3. Upload the ZIP file and activate the plugin
+          4. Configure the plugin settings under Settings > Simple Shibboleth
+          
+          **Note:** This plugin requires a properly configured Shibboleth IdP and SP. See the [installation instructions](https://github.com/joshmckibbin/SimpleShibboleth#installation) for details.
+          
+          ### Requirements
+          - WordPress 5.9 or higher
+          - PHP 8.0 or higher
+          - Shibboleth SP configured with Apache mod_shib
+        files: |
+          simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload release artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: simple-shibboleth-${{ steps.get_version.outputs.VERSION }}
+        path: simple-shibboleth-${{ steps.get_version.outputs.VERSION }}.zip
+        retention-days: 30
